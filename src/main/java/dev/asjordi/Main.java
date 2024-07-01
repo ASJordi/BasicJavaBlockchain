@@ -1,15 +1,21 @@
 package dev.asjordi;
 
+import dev.asjordi.logger.MyLogger;
 import dev.asjordi.model.Block;
 import dev.asjordi.model.Transaction;
 import dev.asjordi.model.TransactionInput;
 import dev.asjordi.model.TransactionOutput;
 import dev.asjordi.model.Wallet;
+
+import java.io.IOException;
 import java.security.Security;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
@@ -18,6 +24,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
  */
 public class Main {
 
+    private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     public static List<Block> blockchain = new LinkedList<>();
     // Contains all unspent transactions
     public static Map<String, TransactionOutput> UTXOs = new HashMap<>();
@@ -30,6 +37,13 @@ public class Main {
 
     public static void main(String[] args) {
         Security.addProvider(new BouncyCastleProvider());
+        LOGGER.setLevel(Level.ALL);
+
+        try {
+            MyLogger.setup();
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage());
+        }
 
         // Create wallets
         walletA = new Wallet();
@@ -46,33 +60,33 @@ public class Main {
         genesisTransaction.outputs.add(new TransactionOutput(genesisTransaction.recipient, genesisTransaction.value, genesisTransaction.transactionId));
         // Store our first transaction in the UTXOs list
         UTXOs.put(genesisTransaction.outputs.get(0).getId(), genesisTransaction.outputs.get(0));
-        
-        System.out.println("Creating and Mining Genesis block...");
+
+        LOGGER.log(Level.INFO, "Creating and Mining Genesis block...");
         Block genesis = new Block("0");
         genesis.addTransaction(genesisTransaction);
         addBlock(genesis);
         
         // TESTING
         Block block1 = new Block(genesis.getHash());
-        System.out.println("\nwalletA's balance is: " + walletA.getBalance());
-        System.out.println("\nwalletA is attempting to send funds (40) to walletB...");
+        LOGGER.log(Level.INFO, () -> "walletA's balance is: " + walletA.getBalance());
+        LOGGER.log(Level.INFO, "walletA is attempting to send funds (40) to walletB...");
         block1.addTransaction(walletA.sendFunds(walletB.getPublicKey(), 40f));
         addBlock(block1);
-        System.out.println("\nwalletA's balance is: " + walletA.getBalance());
-        System.out.println("walletB's balance is: " + walletB.getBalance());
+        LOGGER.log(Level.INFO, () -> "walletA's balance is: " + walletA.getBalance());
+        LOGGER.log(Level.INFO, () -> "walletB's balance is: " + walletB.getBalance());
         
         Block block2 = new Block(block1.getHash());
-        System.out.println("\nWalletA Attempting to send more funds (1000) than it has...");
+        LOGGER.log(Level.INFO, "WalletA Attempting to send more funds (1000) than it has...");
         block2.addTransaction(walletA.sendFunds(walletB.getPublicKey(), 1000f));
         addBlock(block2);
-        System.out.println("\nWalletA's balance is: " + walletA.getBalance());
-        System.out.println("WalletB's balance is: " + walletB.getBalance());
-        
+        LOGGER.log(Level.INFO, () -> "walletA's balance is: " + walletA.getBalance());
+        LOGGER.log(Level.INFO, () -> "walletB's balance is: " + walletB.getBalance());
+
         Block block3 = new Block(block2.getHash());
-        System.out.println("\nWalletB is Attempting to send funds (20) to WalletA...");
+        LOGGER.log(Level.INFO, "WalletB is Attempting to send funds (20) to WalletA...");
         block3.addTransaction(walletB.sendFunds( walletA.getPublicKey(), 20));
-        System.out.println("\nWalletA's balance is: " + walletA.getBalance());
-        System.out.println("WalletB's balance is: " + walletB.getBalance());
+        LOGGER.log(Level.INFO, () -> "walletA's balance is: " + walletA.getBalance());
+        LOGGER.log(Level.INFO, () -> "walletB's balance is: " + walletB.getBalance());
         
         isChainValid();
         
@@ -94,19 +108,19 @@ public class Main {
             
             //Compare registered hash and calculated hash:
             if (!currentBlock.getHash().equals(currentBlock.calculateHash())) {
-                System.out.println("#Current Hashes not equal");
+                LOGGER.log(Level.WARNING, "Current Hashes not equal");
                 return false;
             }
-            
+
             //Compare previous hash and registered previous hash
             if (!previousBlock.getHash().equals(currentBlock.getPreviousHash())) {
-                System.out.println("#Previous Hashes not equal");
+                LOGGER.log(Level.WARNING, "Previous Hashes not equal");
                 return false;
             }
             
             //Check if hash is solved
             if (!currentBlock.getHash().substring(0, difficulty).equals(hashTarget)) {
-                System.out.println("#This block hasn't been mined");
+                LOGGER.log(Level.WARNING, "This block hasn't been mined");
                 return false;
             }
 
@@ -116,12 +130,12 @@ public class Main {
                 Transaction currentTransaction = currentBlock.getTransactions().get(t);
 
                 if (!currentTransaction.verifySignature()) {
-                    System.out.println("#Signature on Transaction(" + t + ") is Invalid");
+                    LOGGER.log(Level.WARNING, "Signature on Transaction {} is Invalid", t);
                     return false;
                 }
                 
                 if (currentTransaction.getInputsValue() != currentTransaction.getOutputsValue()) {
-                    System.out.println("#Inputs are note equal to outputs on Transaction(" + t + ")");
+                    LOGGER.log(Level.WARNING, "Inputs are note equal to outputs on Transaction {}", t);
                     return false;
                 }
 
@@ -129,12 +143,12 @@ public class Main {
                     tempOutput = tempUTXOs.get(input.getTransactionOutputId());
 
                     if (tempOutput == null) {
-                        System.out.println("#Referenced input on Transaction("+ t + ") is Missing");
+                        LOGGER.log(Level.WARNING, "Referenced input on Transaction {} is Missing", t);
                         return false;
                     }
 
                     if (input.getUTXO().getValue() != tempOutput.getValue()) {
-                        System.out.println("#Referenced input Transaction(" + t + ") value is Invalid");
+                        LOGGER.log(Level.WARNING, "Referenced input Transaction {} value is Invalid", t);
                         return false;
                     }
 
@@ -146,17 +160,17 @@ public class Main {
                 }
 
                 if (currentTransaction.outputs.get(0).getRecipient() != currentTransaction.recipient) {
-                    System.out.println("#Transaction(" + t + ") output recipient is not who it should be");
+                    LOGGER.log(Level.WARNING, "Transaction {} output recipient is not who it should be", t);
                     return false;
                 }
                 
                 if (currentTransaction.outputs.get(1).getRecipient() != currentTransaction.sender) {
-                    System.out.println("#Transaction(" + t + ") output 'change' is not sender.");
+                    LOGGER.log(Level.WARNING, "Transaction {} output 'change' is not sender.", t);
                     return false;
                 }
             }
         }
-        System.out.println("Blockchain is valid");
+        LOGGER.log(Level.INFO, "Blockchain is valid");
         return true;
     }
     

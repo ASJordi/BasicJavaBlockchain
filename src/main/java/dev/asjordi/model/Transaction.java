@@ -6,6 +6,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The Transaction class represents a transaction in a blockchain network.
@@ -28,6 +30,7 @@ public class Transaction {
      * A rough count of how many transactions have been generated
      */
     private static int sequence = 0;
+    private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     /**
      * Constructor for the Transaction class.
@@ -69,7 +72,7 @@ public class Transaction {
     public boolean processTransaction() {
         
         if (verifySignature() == false) {
-            System.out.println("#Transaction Signature failed to verify");
+            LOGGER.log(Level.WARNING, "Transaction Signature failed to verify");
             return false;
         }
         
@@ -80,7 +83,7 @@ public class Transaction {
         
         // Check if Transaction is valid
         if (getInputsValue() < Main.minimumTransaction) {
-            System.out.println("#Transaction Inputs too small: " + getInputsValue());
+            LOGGER.log(Level.WARNING, "Transaction Inputs too small: {0}", getInputsValue());
             return false;
         }
         

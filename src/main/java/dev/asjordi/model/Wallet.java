@@ -15,6 +15,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The Wallet class represents a wallet in a blockchain network.
@@ -27,6 +29,7 @@ public class Wallet {
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private Map<String, TransactionOutput> UTXOs;
+    private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     /**
      * Wallet class constructor.
@@ -83,7 +86,7 @@ public class Wallet {
     public Transaction sendFunds(PublicKey _recipient, float value) {
         
         if (getBalance() < value) {
-            System.out.println("#Not enough funds to send transaction. Transaction Discarded.");
+            LOGGER.log(Level.WARNING, "Not enough funds to send transaction. Transaction Discarded.");
             return null;
         }
         

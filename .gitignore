@@ -24,6 +24,12 @@
 hs_err_pid*
 replay_pid*
 
+# Log Files #
+*.log
+*.log.*
+Logging.html
+Logging.txt
+
 ### Maven ###
 target/
 pom.xml.tag

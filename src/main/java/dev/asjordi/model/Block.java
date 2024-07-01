@@ -5,6 +5,8 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * The Block class represents a block in a blockchain network.
@@ -19,6 +21,7 @@ public class Block {
     private List<Transaction> transactions;
     private Long timeStamp;
     private Integer nonce;
+    private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     /**
      * Constructor for the Block class.
@@ -58,7 +61,7 @@ public class Block {
             this.nonce++;
             this.hash = this.calculateHash();
         }
-        System.out.println("Block mined! -> " + this.hash);
+        LOGGER.log(Level.INFO, "Block mined! -> {0}", this.hash);
     }
     
     /**
@@ -71,12 +74,12 @@ public class Block {
         if (t == null) return false;
         if (!"0".equals(this.previousHash)) {
             if (t.processTransaction() != true) {
-                System.out.println("#Transaction failed to process. Discarded.");
+                LOGGER.log(Level.WARNING, "Transaction failed to process. Discarded.");
                 return false;
             }
         }
         this.transactions.add(t);
-        System.out.println("#Transaction successfully added to Block");
+        LOGGER.log(Level.INFO, "Transaction {0} successfully added to Block", t.transactionId);
         return true;
     }
 
